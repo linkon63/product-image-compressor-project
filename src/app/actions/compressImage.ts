@@ -1,6 +1,7 @@
 'use server';
 
 import sharp from 'sharp';
+import { prisma } from '@/lib/prisma';
 
 export interface CompressImageResult {
   success: boolean;
@@ -16,6 +17,7 @@ export async function compressImage(
   try {
     const file = formData.get('image') as File;
     const quality = parseInt(formData.get('quality') as string, 10);
+    const userId = formData.get('userId') as string | null;
 
     if (!file) {
       return {
@@ -39,13 +41,36 @@ export async function compressImage(
     // Process image with Sharp
     const compressedBuffer = await sharp(buffer)
       .webp({ quality }) // Convert to WebP with specified quality
-      .withMetadata(false) // Strip metadata
       .toBuffer();
 
     const compressedSize = compressedBuffer.length;
 
     // Convert to Base64
     const base64Image = `data:image/webp;base64,${compressedBuffer.toString('base64')}`;
+
+    // Save to database if userId is provided
+    if (userId) {
+      try {
+        const compressionRatio = Math.round(
+          ((originalSize - compressedSize) / originalSize) * 100
+        );
+
+        await prisma.compressedImage.create({
+          data: {
+            userId,
+            originalName: file.name,
+            originalSize,
+            compressedSize,
+            compressionRatio,
+            quality,
+            imageData: base64Image,
+          },
+        });
+      } catch (dbError) {
+        console.error('Failed to save to database:', dbError);
+        // Continue even if DB save fails
+      }
+    }
 
     return {
       success: true,
@@ -61,3 +86,4 @@ export async function compressImage(
     };
   }
 }
+

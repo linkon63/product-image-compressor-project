@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Image Compressor - Convert & Compress to WebP",
-  description: "Free online image compressor. Convert and compress your images to WebP format with adjustable quality settings. Reduce file size while maintaining visual quality.",
+  title: "Image Compressor - Multi-Format Reduction",
+  description: "Professional image compressor with multi-format support. Convert and compress your JPEG, PNG, WebP, and GIF images with adjustable quality settings. Reduce file size while maintaining visual quality.",
 };
 
 export default function RootLayout({

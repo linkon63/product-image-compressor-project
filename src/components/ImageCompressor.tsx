@@ -1,10 +1,19 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useRouter } from 'next/navigation';
 import { compressImage } from '@/app/actions/compressImage';
 
+interface User {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
 export default function ImageCompressor() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [originalPreview, setOriginalPreview] = useState<string>('');
   const [compressedImage, setCompressedImage] = useState<string>('');
@@ -13,6 +22,13 @@ export default function ImageCompressor() {
   const [compressedSize, setCompressedSize] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -53,6 +69,11 @@ export default function ImageCompressor() {
       const formData = new FormData();
       formData.append('image', originalFile);
       formData.append('quality', quality.toString());
+      
+      // Include userId if user is logged in
+      if (user) {
+        formData.append('userId', user.id);
+      }
 
       const result = await compressImage(formData);
 
@@ -100,14 +121,33 @@ export default function ImageCompressor() {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="text-4xl">🐼</div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                Image<span className="text-emerald-600">Compressor</span>
-              </h1>
+              <img src="/logo.png" alt="Image Compressor" className="h-12" />
+              <div className='hidden'>
+                <h1 className="text-xl font-bold text-[#2C3E50]">
+                  IMAGE <span className="text-[#00A0DC]">COMPRESSOR</span>
+                </h1>
+                <p className="text-xs text-gray-500">Multi-Format Reduction</p>
+              </div>
             </div>
-            <nav className="hidden md:flex space-x-6 text-sm">
-              <a href="#" className="text-gray-600 hover:text-gray-900">Developer API</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Pricing</a>
+            <nav className="flex items-center space-x-4 text-sm">
+              {user ? (
+                <>
+                  <span className="text-gray-600">Hi, {user.name || user.email}</span>
+                  <button
+                    onClick={() => router.push('/profile')}
+                    className="bg-[#00A0DC] text-white px-4 py-2 rounded-lg hover:bg-[#0080B0] transition-colors font-medium"
+                  >
+                    Profile
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => router.push('/login')}
+                  className="bg-[#00A0DC] text-white px-4 py-2 rounded-lg hover:bg-[#0080B0] transition-colors font-medium"
+                >
+                  Sign In
+                </button>
+              )}
             </nav>
           </div>
         </div>
@@ -135,9 +175,9 @@ export default function ImageCompressor() {
               {...getRootProps()}
               className={`border-2 border-dashed rounded-lg p-16 text-center cursor-pointer transition-all duration-200 ${
                 isDragActive
-                  ? 'border-emerald-500 bg-emerald-50'
+                  ? 'border-[#00A0DC] bg-blue-50'
                   : originalFile
-                  ? 'border-emerald-400 bg-emerald-50/50'
+                  ? 'border-[#7AC943] bg-green-50/50'
                   : 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400'
               }`}
             >
@@ -156,7 +196,7 @@ export default function ImageCompressor() {
                 ) : (
                   <>
                     <div className="text-5xl mb-2">✓</div>
-                    <p className="text-lg font-semibold text-emerald-700">
+                    <p className="text-lg font-semibold text-[#7AC943]">
                       {originalFile.name}
                     </p>
                     <p className="text-sm text-gray-600">
@@ -174,7 +214,7 @@ export default function ImageCompressor() {
                   <label className="text-base font-semibold text-gray-700">
                     Compression Quality
                   </label>
-                  <span className="text-2xl font-bold text-emerald-600">{quality}%</span>
+                  <span className="text-2xl font-bold text-[#00A0DC]">{quality}%</span>
                 </div>
                 <input
                   type="range"
@@ -197,7 +237,7 @@ export default function ImageCompressor() {
                 <button
                   onClick={handleCompress}
                   disabled={isProcessing}
-                  className="w-full bg-emerald-600 text-white font-semibold py-4 px-8 rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 text-lg"
+                  className="w-full bg-[#00A0DC] text-white font-semibold py-4 px-8 rounded-lg hover:bg-[#0080B0] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 text-lg"
                 >
                   {isProcessing ? (
                     <span className="flex items-center justify-center">
@@ -241,12 +281,12 @@ export default function ImageCompressor() {
           /* Results Section */
           <div className="space-y-6">
             {/* Success Message */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
+            <div className="bg-blue-50 border border-[#00A0DC] rounded-lg p-6 text-center">
               <div className="text-5xl mb-3">🎉</div>
-              <h3 className="text-2xl font-bold text-emerald-800 mb-2">
+              <h3 className="text-2xl font-bold text-[#00A0DC] mb-2">
                 Compression Complete!
               </h3>
-              <p className="text-emerald-700">
+              <p className="text-[#0080B0]">
                 Your image has been optimized and is ready to download.
               </p>
             </div>
@@ -259,7 +299,7 @@ export default function ImageCompressor() {
                   {formatFileSize(originalSize)}
                 </p>
               </div>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center">
+              <div className="bg-blue-50 border border-[#00A0DC] rounded-lg p-6 text-center">
                 <p className="text-sm text-emerald-700 mb-1">Compressed Size</p>
                 <p className="text-2xl font-bold text-emerald-800">
                   {formatFileSize(compressedSize)}
@@ -267,7 +307,7 @@ export default function ImageCompressor() {
               </div>
               <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
                 <p className="text-sm text-gray-600 mb-1">Size Reduction</p>
-                <p className="text-2xl font-bold text-emerald-600">
+                <p className="text-2xl font-bold text-[#00A0DC]">
                   {compressionRatio}%
                 </p>
               </div>
@@ -291,10 +331,10 @@ export default function ImageCompressor() {
               </div>
 
               {/* Compressed Image */}
-              <div className="bg-white border border-emerald-200 rounded-lg p-4">
+              <div className="bg-white border border-[#7AC943] rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-emerald-700">Compressed (WebP)</h3>
-                  <span className="text-xs text-emerald-600">{formatFileSize(compressedSize)}</span>
+                  <h3 className="text-sm font-semibold text-[#7AC943]">Compressed (WebP)</h3>
+                  <span className="text-xs text-[#7AC943]">{formatFileSize(compressedSize)}</span>
                 </div>
                 <div className="relative aspect-video bg-gray-100 rounded overflow-hidden">
                   <img
@@ -310,7 +350,7 @@ export default function ImageCompressor() {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleDownload}
-                className="flex-1 bg-emerald-600 text-white font-semibold py-4 px-8 rounded-lg hover:bg-emerald-700 transition-colors duration-200 flex items-center justify-center space-x-2"
+                className="flex-1 bg-[#00A0DC] text-white font-semibold py-4 px-8 rounded-lg hover:bg-[#0080B0] transition-colors duration-200 flex items-center justify-center space-x-2"
               >
                 <svg
                   className="w-5 h-5"
@@ -387,7 +427,7 @@ export default function ImageCompressor() {
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #059669;
+          background: linear-gradient(135deg, #00A0DC, #7AC943);
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           transition: all 0.2s;
@@ -395,7 +435,7 @@ export default function ImageCompressor() {
 
         .tinypng-slider::-webkit-slider-thumb:hover {
           transform: scale(1.1);
-          background: #047857;
+          background: linear-gradient(135deg, #0080B0, #68B030);
         }
 
         .tinypng-slider::-moz-range-thumb {
@@ -411,14 +451,14 @@ export default function ImageCompressor() {
 
         .tinypng-slider::-moz-range-thumb:hover {
           transform: scale(1.1);
-          background: #047857;
+          background: linear-gradient(135deg, #0080B0, #68B030);
         }
 
         .tinypng-slider::-webkit-slider-runnable-track {
           background: linear-gradient(
             to right,
-            #059669 0%,
-            #059669 ${quality}%,
+            #00A0DC 0%,
+            #00A0DC ${quality}%,
             #e5e7eb ${quality}%,
             #e5e7eb 100%
           );
